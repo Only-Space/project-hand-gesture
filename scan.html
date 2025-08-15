@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Gesture Launcher - Final</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;700&family=Orbitron:wght@700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-glow: #00ffff;
+            --secondary-glow: #0dff00;
+            --background-start: #0c111e;
+            --background-end: #1a202c;
+            --text-color: #e0f2f7;
+        }
+
+        body {
+            margin: 0;
+            background: linear-gradient(135deg, var(--background-end) 0%, var(--background-start) 100%);
+            color: var(--text-color);
+            font-family: 'Poppins', sans-serif;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        /* Canvas untuk particle background */
+        #particle-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+
+        #input_video {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scaleX(-1);
+            width: 100%;
+            height: 100%;
+            max-width: 460px;
+            max-height: 460px;
+            object-fit: cover;
+            border-radius: 50%;
+            opacity: 40%;
+            z-index: 0;
+            transition: opacity 0.5s ease;
+        }
+
+        .scan-container {
+            position: relative;
+            z-index: 1;
+            width: 100vmin;
+            height: 100vmin;
+            max-width: 600px;
+            max-height: 600px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border: 2px solid rgba(0, 255, 255, 0.2);
+            border-radius: 50%;
+            background-color: rgba(0, 0, 0, 0.2);
+            animation: strobe-animation 1.5s ease-in-out infinite;
+            transition: opacity 0.5s ease, transform 0.5s ease;
+            overflow: hidden;
+        }
+
+        .scan-container.access-granted {
+            animation-name: strobe-animation-green;
+            border-color: rgba(13, 255, 0, 0.2);
+        }
+
+        .futuristic-arm-overlay {
+            position: absolute;
+            width: 70%;
+            height: 70%;
+            object-fit: cover;
+            opacity: 30%;
+            transition: opacity 0.5s ease-in-out;
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        .scan-container.identifying .futuristic-arm-overlay {
+            opacity: 0;
+        }
+
+        @keyframes strobe-animation {
+            0%,
+            100% {
+                box-shadow: 0 0 35px rgba(0, 255, 255, 0.3);
+                transform: scale(1);
+            }
+
+            50% {
+                box-shadow: 0 0 70px 10px rgba(0, 255, 255, 0.75);
+                transform: scale(1.015);
+            }
+        }
+
+        @keyframes strobe-animation-green {
+            0%,
+            100% {
+                box-shadow: 0 0 35px var(--secondary-glow);
+                transform: scale(1);
+            }
+
+            50% {
+                box-shadow: 0 0 70px 10px var(--secondary-glow);
+                transform: scale(1.015);
+            }
+        }
+
+        .progress-circle {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            transform: rotate(-90deg);
+            z-index: 3;
+        }
+
+        .progress-circle circle {
+            fill: none;
+            stroke-width: 6px;
+        }
+
+        #progress-bg {
+            stroke: rgba(255, 255, 255, 0.1);
+        }
+
+        #progress-bar {
+            stroke: var(--primary-glow);
+            stroke-linecap: round;
+            transition: stroke-dashoffset 0.2s linear;
+        }
+
+        .ui-text-wrapper {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 4;
+        }
+
+        .ui-text {
+            opacity: 0;
+            visibility: hidden;
+            position: absolute;
+            text-align: center;
+            transition: opacity 0.4s ease-in-out, visibility 0s linear 0.4s;
+            font-family: 'Orbitron', sans-serif;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            text-shadow: 0 0 10px rgba(0, 255, 255, 0.7),
+                0 0 20px rgba(0, 255, 255, 0.5),
+                0 0 30px rgba(0, 255, 255, 0.3);
+        }
+
+        .visible {
+            opacity: 1 !important;
+            visibility: visible !important;
+            transition: opacity 0.4s ease-in-out;
+        }
+
+        #instructions {
+            font-size: 1.1em;
+            color: var(--primary-glow);
+            animation: pulseText 1.5s infinite;
+        }
+
+        #status-message {
+            font-size: 1em;
+            color: #ffffff;
+        }
+
+        #countdown-display {
+            font-size: 8em;
+            color: white;
+            text-shadow: 0 0 20px rgba(255, 255, 255, 0.7);
+        }
+
+        #launch-message .label {
+            font-size: 1.5em;
+            font-weight: 300;
+            color: var(--primary-glow);
+            text-shadow: 0 0 10px var(--primary-glow);
+        }
+
+        #launch-message .loading-percent {
+            font-size: 4em;
+            font-weight: 700;
+            margin-top: 10px;
+        }
+
+        #launch-message .final-message {
+            font-size: 2.5em;
+            font-weight: 700;
+        }
+
+        @keyframes pulseText {
+            0%,
+            100% {
+                text-shadow: 0 0 10px rgba(0, 255, 255, 0.7),
+                    0 0 20px rgba(0, 255, 255, 0.5),
+                    0 0 30px rgba(0, 255, 255, 0.3);
+                transform: scale(1);
+            }
+
+            50% {
+                text-shadow: 0 0 15px rgba(0, 255, 255, 1),
+                    0 0 30px rgba(0, 255, 255, 0.8),
+                    0 0 45px rgba(0, 255, 255, 0.5);
+                transform: scale(1.05);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="particle-canvas"></canvas>
+
+    <div class="scan-container">
+        <video id="input_video" autoplay playsinline></video>
+        <img src="futuristic-arm-removebg-preview.png" class="futuristic-arm-overlay" alt="Futuristic Arm Scan">
+
+        <svg class="progress-circle" viewBox="0 0 100 100">
+            <circle id="progress-bg" cx="50" cy="50" r="45"></circle>
+            <circle id="progress-bar" cx="50" cy="50" r="45"></circle>
+        </svg>
+
+        <div class="ui-text-wrapper">
+            <p id="instructions" class="ui-text visible">Letakkan tangan di depan kamera</p>
+            <p id="status-message" class="ui-text"></p>
+            <p id="countdown-display" class="ui-text"></p>
+            <p id="launch-message" class="ui-text"></p>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.min.js"></script>
+
+    <script>
+        // --- SCRIPT UTAMA UNTUK GESTURE LAUNCHER ---
+        const videoElement = document.getElementById("input_video");
+        const instructionsElement = document.getElementById("instructions");
+        const statusMessageElement = document.getElementById("status-message");
+        const countdownDisplayElement = document.getElementById("countdown-display");
+        const launchMessageElement = document.getElementById("launch-message");
+        const scanContainer = document.querySelector(".scan-container");
+        const progressBar = document.getElementById('progress-bar');
+
+        const radius = progressBar.r.baseVal.value;
+        const circumference = 2 * Math.PI * radius;
+        progressBar.style.strokeDasharray = circumference;
+
+        let openHandCounter = 0;
+        const thresholdFrames = 15;
+        let gestureTriggered = false;
+        let countdownInterval = null;
+
+        function showElement(el, message = null) {
+            document.querySelectorAll('.ui-text').forEach(p => p.classList.remove('visible'));
+            if (message) el.innerHTML = message;
+            el.classList.add('visible');
+        }
+
+        function setProgress(percent, color = null) {
+            const offset = circumference - (percent / 100) * circumference;
+            progressBar.style.strokeDashoffset = offset;
+            if (color) progressBar.style.stroke = color;
+        }
+
+        function startCountdown() {
+            if (gestureTriggered) return;
+            gestureTriggered = true;
+            let countdownValue = 3;
+            showElement(countdownDisplayElement, countdownValue);
+
+            countdownInterval = setInterval(() => {
+                countdownValue--;
+                countdownDisplayElement.innerHTML = countdownValue;
+                if (countdownValue <= 0) {
+                    clearInterval(countdownInterval);
+                    launchProduct();
+                }
+            }, 1000);
+        }
+
+        async function launchProduct() {
+            if (window.camera) window.camera.stop();
+            videoElement.style.opacity = '0';
+            scanContainer.classList.add('identifying');
+            showElement(launchMessageElement);
+
+            function animateLoading(percentage) {
+                launchMessageElement.innerHTML = `<div class="label">IDENTIFYING</div><div class="loading-percent">${percentage}%</div>`;
+                setProgress(percentage, 'var(--primary-glow)');
+
+                let delay = (percentage >= 98) ? 800 : 25;
+
+                if (percentage < 100) {
+                    setTimeout(() => animateLoading(percentage + 1), delay);
+                } else {
+                    setTimeout(() => {
+                        scanContainer.classList.add('access-granted');
+                        launchMessageElement.innerHTML = `<div class="final-message" style="color: var(--secondary-glow); text-shadow: 0 0 10px var(--secondary-glow);">ACCESS GRANTED</div>`;
+
+                        let greenPercent = 0;
+
+                        function fillGreenBar() {
+                            setProgress(greenPercent, 'var(--secondary-glow)');
+                            if (greenPercent < 100) {
+                                greenPercent++;
+                                setTimeout(fillGreenBar, 10);
+                            } else {
+                                setTimeout(() => {
+                                    window.location.href = "https://www.youtube.com/";
+                                }, 1000);
+                            }
+                        }
+                        fillGreenBar();
+                    }, 500);
+                }
+            }
+            animateLoading(0);
+        }
+
+        function onResults(results) {
+            if (gestureTriggered) return;
+
+            const handDetected = results.multiHandLandmarks && results.multiHandLandmarks.length > 0;
+
+            if (handDetected) {
+                const landmarks = results.multiHandLandmarks[0];
+                const isHandOpen = [8, 12, 16, 20].every(i => landmarks[i].y < landmarks[i - 2].y);
+
+                if (isHandOpen) {
+                    openHandCounter++;
+                    showElement(statusMessageElement, `Validasi... ${Math.round((openHandCounter / thresholdFrames) * 100)}%`);
+                    if (openHandCounter >= thresholdFrames) {
+                        startCountdown();
+                    }
+                } else {
+                    openHandCounter = 0;
+                    showElement(statusMessageElement, "Buka telapak tangan untuk memulai.");
+                }
+            } else {
+                openHandCounter = 0;
+                showElement(instructionsElement);
+            }
+        }
+
+        const hands = new Hands({ locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}` });
+        hands.setOptions({
+            maxNumHands: 1,
+            modelComplexity: 1,
+            minDetectionConfidence: 0.7,
+            minTrackingConfidence: 0.7,
+        });
+        hands.onResults(onResults);
+
+        window.camera = new Camera(videoElement, {
+            onFrame: async () => {
+                if (videoElement.readyState >= 2) {
+                    await hands.send({ image: videoElement });
+                }
+            },
+            width: 640,
+            height: 480,
+        });
+
+        window.camera.start().catch(err => {
+            console.error("Camera start failed:", err);
+            instructionsElement.innerHTML = "Error: Tidak dapat mengakses kamera.";
+            instructionsElement.classList.add('visible');
+        });
+        setProgress(0);
+    </script>
+
+    <script>
+        // --- SCRIPT PARTICLE DENGAN PENGHALANG LINGKARAN ---
+        const canvas = document.getElementById('particle-canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        let particlesArray;
+        const scanContainerElement = document.querySelector('.scan-container');
+
+        class Particle {
+            constructor(x, y, directionX, directionY, size, color) {
+                this.x = x;
+                this.y = y;
+                this.directionX = directionX;
+                this.directionY = directionY;
+                this.size = size;
+                this.color = color;
+            }
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2, false);
+                ctx.fillStyle = 'rgba(0, 255, 255, 0.5)';
+                ctx.fill();
+            }
+            update() {
+                if (this.x > canvas.width || this.x < 0) this.directionX *= -1;
+                if (this.y > canvas.height || this.y < 0) this.directionY *= -1;
+
+                const rect = scanContainerElement.getBoundingClientRect();
+                const centerX = rect.left + rect.width / 2;
+                const centerY = rect.top + rect.height / 2;
+                const radius = Math.max(rect.width, rect.height) / 2;
+
+                let nextX = this.x + this.directionX;
+                let nextY = this.y + this.directionY;
+                const distNext = Math.sqrt((nextX - centerX) ** 2 + (nextY - centerY) ** 2);
+
+                // Pantulkan jika akan masuk ke lingkaran
+                if (distNext < radius + this.size) {
+                    this.directionX *= -1;
+                    this.directionY *= -1;
+                    nextX = this.x + this.directionX;
+                    nextY = this.y + this.directionY;
+                }
+
+                this.x = nextX;
+                this.y = nextY;
+                this.draw();
+            }
+        }
+
+        function init() {
+            particlesArray = [];
+            let numberOfParticles = (canvas.height * canvas.width) / 25000;
+
+            const rect = scanContainerElement.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+            const radius = Math.max(rect.width, rect.height) / 2;
+
+            for (let i = 0; i < numberOfParticles; i++) {
+                let size = (Math.random() * 2) + 1;
+                let x, y, dist;
+                // Spawn partikel di luar lingkaran
+                do {
+                    x = Math.random() * innerWidth;
+                    y = Math.random() * innerHeight;
+                    dist = Math.sqrt((x - centerX) ** 2 + (y - centerY) ** 2);
+                } while (dist < radius + size);
+
+                let dirX = (Math.random() * .3) - .15;
+                let dirY = (Math.random() * .3) - .15;
+                particlesArray.push(new Particle(x, y, dirX, dirY, size, 'rgba(0, 255, 255, 0.8)'));
+            }
+        }
+
+        function connect() {
+            for (let a = 0; a < particlesArray.length; a++) {
+                for (let b = a; b < particlesArray.length; b++) {
+                    let distance = ((particlesArray[a].x - particlesArray[b].x) ** 2) +
+                        ((particlesArray[a].y - particlesArray[b].y) ** 2);
+                    if (distance < 20000) {
+                        let opacityValue = 1 - (distance / 20000);
+                        ctx.strokeStyle = `rgba(0, 255, 255, ${opacityValue})`;
+                        ctx.lineWidth = 1;
+                        ctx.beginPath();
+                        ctx.moveTo(particlesArray[a].x, particlesArray[a].y);
+                        ctx.lineTo(particlesArray[b].x, particlesArray[b].y);
+                        ctx.stroke();
+                    }
+                }
+            }
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            ctx.clearRect(0, 0, innerWidth, innerHeight);
+
+            for (let i = 0; i < particlesArray.length; i++) {
+                particlesArray[i].update();
+            }
+            connect();
+        }
+
+        window.addEventListener('resize', () => {
+            canvas.width = innerWidth;
+            canvas.height = innerHeight;
+            init();
+        });
+
+        init();
+        animate();
+    </script>
+</body>
+
+</html>
