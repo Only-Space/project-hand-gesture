@@ -1,13 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Gesture Launcher - Final with Audio</title>
+    <title>Gesture Launcher - Final with Audio & Particles</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;700&family=Orbitron:wght@700&display=swap" rel="stylesheet">
- <style>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;700&family=Orbitron:wght@700&display=swap"
+        rel="stylesheet">
+    <style>
         :root {
             --primary-glow: #00ffff;
             --secondary-glow: #0dff00;
@@ -93,6 +95,7 @@
         }
 
         @keyframes strobe-animation {
+
             0%,
             100% {
                 box-shadow: 0 0 35px rgba(0, 255, 255, 0.3);
@@ -106,6 +109,7 @@
         }
 
         @keyframes strobe-animation-green {
+
             0%,
             100% {
                 box-shadow: 0 0 35px var(--secondary-glow);
@@ -207,6 +211,7 @@
         }
 
         @keyframes pulseText {
+
             0%,
             100% {
                 text-shadow: 0 0 10px rgba(0, 255, 255, 0.7),
@@ -246,7 +251,7 @@
             text-shadow: 0 0 15px var(--primary-glow);
             margin-bottom: 10px;
         }
-        
+
         #start-overlay p {
             font-size: 1.1em;
             margin-bottom: 30px;
@@ -265,12 +270,12 @@
             box-shadow: 0 0 20px var(--primary-glow);
             transition: all 0.3s ease;
         }
-        
+
         #start-button:hover {
             transform: scale(1.05);
             box-shadow: 0 0 30px var(--primary-glow);
         }
- </style>
+    </style>
 </head>
 
 <body>
@@ -356,7 +361,7 @@
             showElement(countdownDisplayElement, countdownValue);
 
             beepAudio.currentTime = 0;
-            beepAudio.play(); 
+            beepAudio.play();
 
             countdownInterval = setInterval(() => {
                 countdownValue--;
@@ -371,7 +376,7 @@
                     launchProduct();
                 }
             }, 1000);
-            
+
         }
 
         async function launchProduct() {
@@ -384,18 +389,21 @@
             introAudio.play();
 
             function animateLoading(percentage) {
-                launchMessageElement.innerHTML = `<div class="label">IDENTIFYING</div><div class="loading-percent">${percentage}%</div>`;
+                launchMessageElement.innerHTML =
+                    `<div class="label">IDENTIFYING</div><div class="loading-percent">${percentage}%</div>`;
                 setProgress(percentage, 'var(--primary-glow)');
 
-                let delay = (percentage >= 98) ? 800 : 25;
+                let delay = (percentage >= 98) ? 800 : 55;
 
                 if (percentage < 100) {
                     setTimeout(() => animateLoading(percentage + 1), delay);
                 } else {
                     setTimeout(() => {
                         scanContainer.classList.add('access-granted');
-                        launchMessageElement.innerHTML = `<div class="final-message" style="color: var(--secondary-glow); text-shadow: 0 0 10px var(--secondary-glow);">ACCESS GRANTED</div>`;
+                        launchMessageElement.innerHTML =
+                            `<div class="final-message" style="color: var(--secondary-glow); text-shadow: 0 0 10px var(--secondary-glow);">ACCESS GRANTED</div>`;
                         let greenPercent = 0;
+
                         function fillGreenBar() {
                             setProgress(greenPercent, 'var(--secondary-glow)');
                             if (greenPercent < 100) {
@@ -425,7 +433,8 @@
 
                 if (isHandOpen) {
                     openHandCounter++;
-                    showElement(statusMessageElement, `Validasi... ${Math.round((openHandCounter / thresholdFrames) * 100)}%`);
+                    showElement(statusMessageElement,
+                        `Validasi... ${Math.round((openHandCounter / thresholdFrames) * 100)}%`);
                     if (openHandCounter >= thresholdFrames) {
                         startCountdown();
                     }
@@ -444,11 +453,14 @@
             startOverlay.style.display = 'none'; // Sembunyikan overlay
 
             // Trik untuk "membuka kunci" audio
-            beepAudio.play().then(() => beepAudio.pause()).catch(e => console.log("Audio context needs user interaction."));
+            beepAudio.play().then(() => beepAudio.pause()).catch(e => console.log(
+                "Audio context needs user interaction."));
             introAudio.play().then(() => introAudio.pause()).catch(e => {});
 
             // Inisialisasi MediaPipe Hands
-            hands = new Hands({ locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}` });
+            hands = new Hands({
+                locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+            });
             hands.setOptions({
                 maxNumHands: 1,
                 modelComplexity: 1,
@@ -461,7 +473,9 @@
             camera = new Camera(videoElement, {
                 onFrame: async () => {
                     if (videoElement.readyState >= 2) {
-                        await hands.send({ image: videoElement });
+                        await hands.send({
+                            image: videoElement
+                        });
                     }
                 },
                 width: 640,
@@ -476,14 +490,124 @@
 
         // --- EVENT LISTENER UNTUK TOMBOL MULAI ---
         startButton.addEventListener('click', initializeApp);
-        
+
         // Atur progress bar ke 0 saat halaman dimuat
         setProgress(0);
     </script>
 
     <script>
-        /* --- SCRIPT PARTICLE SAMA SEPERTI VERSI SEBELUMNYA --- */
-        /* (Gunakan kode partikel yang sama tanpa perubahan) */
+        // --- SCRIPT PARTICLE DENGAN PENGHALANG LINGKARAN ---
+        const canvas = document.getElementById('particle-canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        let particlesArray;
+        const scanContainerElement = document.querySelector('.scan-container');
+
+        class Particle {
+            constructor(x, y, directionX, directionY, size, color) {
+                this.x = x;
+                this.y = y;
+                this.directionX = directionX;
+                this.directionY = directionY;
+                this.size = size;
+                this.color = color;
+            }
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2, false);
+                ctx.fillStyle = 'rgba(0, 255, 255, 0.5)';
+                ctx.fill();
+            }
+            update() {
+                if (this.x > canvas.width || this.x < 0) this.directionX *= -1;
+                if (this.y > canvas.height || this.y < 0) this.directionY *= -1;
+
+                const rect = scanContainerElement.getBoundingClientRect();
+                const centerX = rect.left + rect.width / 2;
+                const centerY = rect.top + rect.height / 2;
+                const radius = Math.max(rect.width, rect.height) / 2;
+
+                let nextX = this.x + this.directionX;
+                let nextY = this.y + this.directionY;
+                const distNext = Math.sqrt((nextX - centerX) ** 2 + (nextY - centerY) ** 2);
+
+                // Pantulkan jika akan masuk ke lingkaran
+                if (distNext < radius + this.size) {
+                    this.directionX *= -1;
+                    this.directionY *= -1;
+                    nextX = this.x + this.directionX;
+                    nextY = this.y + this.directionY;
+                }
+
+                this.x = nextX;
+                this.y = nextY;
+                this.draw();
+            }
+        }
+
+        function init() {
+            particlesArray = [];
+            let numberOfParticles = (canvas.height * canvas.width) / 25000;
+
+            const rect = scanContainerElement.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+            const radius = Math.max(rect.width, rect.height) / 2;
+
+            for (let i = 0; i < numberOfParticles; i++) {
+                let size = (Math.random() * 2) + 1;
+                let x, y, dist;
+                do {
+                    x = Math.random() * innerWidth;
+                    y = Math.random() * innerHeight;
+                    dist = Math.sqrt((x - centerX) ** 2 + (y - centerY) ** 2);
+                } while (dist < radius + size);
+
+                let dirX = (Math.random() * .3) - .15;
+                let dirY = (Math.random() * .3) - .15;
+                particlesArray.push(new Particle(x, y, dirX, dirY, size, 'rgba(0, 255, 255, 0.8)'));
+            }
+        }
+
+        function connect() {
+            for (let a = 0; a < particlesArray.length; a++) {
+                for (let b = a; b < particlesArray.length; b++) {
+                    let distance = ((particlesArray[a].x - particlesArray[b].x) ** 2) +
+                        ((particlesArray[a].y - particlesArray[b].y) ** 2);
+                    if (distance < 20000) {
+                        let opacityValue = 1 - (distance / 20000);
+                        ctx.strokeStyle = `rgba(0, 255, 255, ${opacityValue})`;
+                        ctx.lineWidth = 1;
+                        ctx.beginPath();
+                        ctx.moveTo(particlesArray[a].x, particlesArray[a].y);
+                        ctx.lineTo(particlesArray[b].x, particlesArray[b].y);
+                        ctx.stroke();
+                    }
+                }
+            }
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            ctx.clearRect(0, 0, innerWidth, innerHeight);
+
+            for (let i = 0; i < particlesArray.length; i++) {
+                particlesArray[i].update();
+            }
+            connect();
+        }
+
+        window.addEventListener('resize', () => {
+            canvas.width = innerWidth;
+            canvas.height = innerHeight;
+            init();
+        });
+
+        init();
+        animate();
     </script>
 </body>
+
 </html>
