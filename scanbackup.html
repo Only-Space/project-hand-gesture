@@ -70,7 +70,7 @@
             border-radius: 50%;
             background-color: rgba(0, 0, 0, 0.2);
             animation: strobe-animation 1.5s ease-in-out infinite;
-            transition: opacity 0.5s ease, transform 0.5s ease;
+            transition: opacity 1s ease, transform 0.5s ease; /* Transisi opacity diperlambat */
             overflow: hidden;
         }
 
@@ -335,7 +335,7 @@
 
         // Deklarasi variabel global
         let openHandCounter = 0;
-        const thresholdFrames = 15;
+        const thresholdFrames = 100;
         let gestureTriggered = false;
         let countdownInterval = null;
         let hands, camera; // Dideklarasikan di sini agar bisa diakses di berbagai fungsi
@@ -400,8 +400,10 @@
                 } else {
                     setTimeout(() => {
                         scanContainer.classList.add('access-granted');
+                        
                         launchMessageElement.innerHTML =
-                            `<div class="final-message" style="color: var(--secondary-glow); text-shadow: 0 0 10px var(--secondary-glow);">ACCESS GRANTED</div>`;
+                            `<div id="final-message-text" class="final-message" style="color: var(--secondary-glow); text-shadow: 0 0 10px var(--secondary-glow); transition: opacity 0.4s ease-in-out;">ACCESS GRANTED</div>`;
+                        
                         let greenPercent = 0;
 
                         function fillGreenBar() {
@@ -410,9 +412,42 @@
                                 greenPercent++;
                                 setTimeout(fillGreenBar, 10);
                             } else {
+                                // --- RANGKAIAN ANIMASI FINAL ---
                                 setTimeout(() => {
-                                    window.location.href = "https://www.youtube.com/";
-                                }, 1000);
+                                    const finalMessageText = document.getElementById('final-message-text');
+                                    if (finalMessageText) {
+                                        // 1. Hilangkan teks "ACCESS GRANTED"
+                                        finalMessageText.style.opacity = '0';
+
+                                        // 2. Tunggu transisi selesai, lalu hilangkan scan container dan semua isinya
+                                        setTimeout(() => {
+                                            scanContainer.style.opacity = '0';
+                                            scanContainer.style.pointerEvents = 'none';
+                                            
+                                            // 3. Pindahkan elemen pesan ke luar container agar tetap terlihat
+                                            document.body.appendChild(launchMessageElement);
+                                            launchMessageElement.style.position = 'fixed';
+                                            launchMessageElement.style.top = '50%';
+                                            launchMessageElement.style.left = '50%';
+                                            launchMessageElement.style.transform = 'translate(-50%, -50%)';
+
+
+                                            // 4. Tunggu container hilang, lalu tampilkan pesan baru
+                                            setTimeout(() => {
+                                                finalMessageText.innerHTML = 'The dawn of a new era has arrived. Welcome to a future forged by innovation,<br>as the Udayana University Artificial Intelligence Laboratory officially commences its mission to redefine what is possible.';
+                                                finalMessageText.style.fontSize = '2em'; // Sesuaikan ukuran font
+                                                finalMessageText.style.lineHeight = '1.4'; // Sesuaikan jarak baris
+                                                finalMessageText.style.opacity = '1';
+
+                                                // 5. Tunggu 3 detik, lalu pindah ke YouTube
+                                                setTimeout(() => {
+                                                    window.location.href = "https://www.youtube.com/";
+                                                }, 3000); 
+
+                                            }, 1000); // Waktu ini harus cocok dengan transisi opacity di CSS .scan-container
+                                        }, 500);
+                                    }
+                                }, 1500); 
                             }
                         }
                         fillGreenBar();
@@ -528,21 +563,30 @@
                 const centerX = rect.left + rect.width / 2;
                 const centerY = rect.top + rect.height / 2;
                 const radius = Math.max(rect.width, rect.height) / 2;
+                const isScanContainerVisible = scanContainerElement.style.opacity !== '0';
 
-                let nextX = this.x + this.directionX;
-                let nextY = this.y + this.directionY;
-                const distNext = Math.sqrt((nextX - centerX) ** 2 + (nextY - centerY) ** 2);
+                // Hanya pantulkan partikel jika scan container masih terlihat
+                if (isScanContainerVisible) {
+                    let nextX = this.x + this.directionX;
+                    let nextY = this.y + this.directionY;
+                    const distNext = Math.sqrt((nextX - centerX) ** 2 + (nextY - centerY) ** 2);
 
-                // Pantulkan jika akan masuk ke lingkaran
-                if (distNext < radius + this.size) {
-                    this.directionX *= -1;
-                    this.directionY *= -1;
-                    nextX = this.x + this.directionX;
-                    nextY = this.y + this.directionY;
+                    // Pantulkan jika akan masuk ke lingkaran
+                    if (distNext < radius + this.size) {
+                        this.directionX *= -1;
+                        this.directionY *= -1;
+                        nextX = this.x + this.directionX;
+                        nextY = this.y + this.directionY;
+                    }
+
+                    this.x = nextX;
+                    this.y = nextY;
+                } else {
+                    // Jika scan container tidak terlihat, biarkan partikel bergerak bebas
+                    this.x += this.directionX;
+                    this.y += this.directionY;
                 }
 
-                this.x = nextX;
-                this.y = nextY;
                 this.draw();
             }
         }
