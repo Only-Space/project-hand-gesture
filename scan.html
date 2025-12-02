@@ -323,7 +323,6 @@
 <body>
     <canvas id="particle-canvas"></canvas>
 
-    <!-- Container 1 -->
     <div class="scan-container" id="container1">
         <video class="input_video" id="input_video1" autoplay playsinline></video>
         <img src="futuristic-arm-removebg-preview.png" class="futuristic-arm-overlay" alt="Futuristic Arm Scan">
@@ -341,7 +340,6 @@
         </div>
     </div>
 
-    <!-- Container 2 -->
     <div class="scan-container" id="container2">
         <video class="input_video" id="input_video2" autoplay playsinline></video>
         <img src="futuristic-arm-removebg-preview.png" class="futuristic-arm-overlay" alt="Futuristic Arm Scan">
@@ -625,60 +623,104 @@
             // Tambahkan class red-theme ke container 2
             configs[1].scanContainer.classList.add('red-theme');
 
-            // Dapatkan semua kamera yang tersedia
-            const devices = await navigator.mediaDevices.enumerateDevices();
-            const videoDevices = devices.filter(device => device.kind === 'videoinput');
+            try {
+                // 1. Dapatkan list kamera SEBELUM meminta izin (label akan kosong)
+                let devices = await navigator.mediaDevices.enumerateDevices();
+                let videoDevices = devices.filter(device => device.kind === 'videoinput');
+                
+                console.log("Kamera sebelum izin:", videoDevices);
 
-            // Cek apakah kamera kurang dari 2
-            if (videoDevices.length < 2) {
-                const config2 = configs[1];
-                config2.videoElement.style.opacity = '0';
-                showElement(config2, config2.instructionsElement, 
-                    `⚠️ KAMERA KEDUA<br>TIDAK TERDETEKSI<br><br><span style="font-size: 0.8em;">Hanya ${videoDevices.length} kamera<br>tersedia</span>`);
-                config2.instructionsElement.style.color = '#ff4444';
-                config2.instructionsElement.style.fontSize = '0.9em';
-                config2.scanContainer.style.borderColor = 'rgba(255, 68, 68, 0.5)';
-                config2.scanContainer.style.boxShadow = '0 0 35px rgba(255, 68, 68, 0.5)';
-                config2.scanContainer.style.animation = 'none';
-            }
+                // 2. Minta izin untuk SEMUA kamera yang terdeteksi
+                if (videoDevices.length >= 2) {
+                    // Strategi: Minta 2 stream sekaligus dengan exact deviceId
+                    const stream1Promise = navigator.mediaDevices.getUserMedia({ 
+                        video: { deviceId: { exact: videoDevices[0].deviceId } }
+                    });
+                    const stream2Promise = navigator.mediaDevices.getUserMedia({ 
+                        video: { deviceId: { exact: videoDevices[1].deviceId } }
+                    });
 
-            // Inisialisasi setiap container dengan kamera berbeda
-            for (let i = 0; i < configs.length && i < videoDevices.length; i++) {
-                const config = configs[i];
-                const deviceId = videoDevices[i].deviceId;
+                    const [stream1, stream2] = await Promise.all([stream1Promise, stream2Promise]);
+                    
+                    // Stop kedua stream, kita cuma butuh izin
+                    stream1.getTracks().forEach(track => track.stop());
+                    stream2.getTracks().forEach(track => track.stop());
 
-                // Inisialisasi MediaPipe Hands
-                config.hands = new Hands({
-                    locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
-                });
-                config.hands.setOptions({
-                    maxNumHands: 1,
-                    modelComplexity: 1,
-                    minDetectionConfidence: 0.7,
-                    minTrackingConfidence: 0.7,
-                });
-                config.hands.onResults(createOnResults(config));
+                    console.log("Izin untuk 2 kamera berhasil!");
+                } else if (videoDevices.length === 1) {
+                    // Hanya 1 kamera terdeteksi
+                    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                    stream.getTracks().forEach(track => track.stop());
+                } else {
+                    throw new Error("Tidak ada kamera terdeteksi");
+                }
 
-                // Inisialisasi kamera dengan device ID spesifik
-                config.camera = new Camera(config.videoElement, {
-                    onFrame: async () => {
-                        if (config.videoElement.readyState >= 2) {
-                            await config.hands.send({
-                                image: config.videoElement
-                            });
-                        }
-                    },
-                    width: 640,
-                    height: 480,
-                    deviceId: deviceId
-                });
+                // 3. Enumerate lagi SETELAH izin diberikan (sekarang label akan muncul)
+                devices = await navigator.mediaDevices.enumerateDevices();
+                videoDevices = devices.filter(device => device.kind === 'videoinput');
 
-                config.camera.start().catch(err => {
-                    console.error(`Camera ${config.id} start failed:`, err);
-                    showElement(config, config.instructionsElement, "Error: Tidak dapat mengakses kamera.");
-                });
+                console.log("Kamera setelah izin:", videoDevices);
 
-                setProgress(config, 0);
+                // Cek jumlah kamera
+                if (videoDevices.length < 2) {
+                    const config2 = configs[1];
+                    config2.videoElement.style.opacity = '0';
+                    showElement(config2, config2.instructionsElement, 
+                        `⚠️ KAMERA KEDUA<br>TIDAK TERDETEKSI<br><br><span style="font-size: 0.8em;">Hanya ${videoDevices.length} kamera<br>tersedia</span>`);
+                    config2.instructionsElement.style.color = '#ff4444';
+                    config2.instructionsElement.style.fontSize = '0.9em';
+                    config2.scanContainer.style.borderColor = 'rgba(255, 68, 68, 0.5)';
+                    config2.scanContainer.style.boxShadow = '0 0 35px rgba(255, 68, 68, 0.5)';
+                    config2.scanContainer.style.animation = 'none';
+                }
+
+                // 4. Loop inisialisasi kamera secara spesifik
+                for (let i = 0; i < configs.length && i < videoDevices.length; i++) {
+                    const config = configs[i];
+                    const deviceId = videoDevices[i].deviceId;
+                    
+                    console.log(`Menginisialisasi Config ${config.id} dengan Kamera: ${videoDevices[i].label || 'Unknown'}`);
+
+                    // Inisialisasi MediaPipe Hands
+                    config.hands = new Hands({
+                        locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+                    });
+                    config.hands.setOptions({
+                        maxNumHands: 1,
+                        modelComplexity: 1,
+                        minDetectionConfidence: 0.7,
+                        minTrackingConfidence: 0.7,
+                    });
+                    config.hands.onResults(createOnResults(config));
+
+                    // Inisialisasi kamera dengan deviceId yang SUDAH DIPILIH
+                    config.camera = new Camera(config.videoElement, {
+                        onFrame: async () => {
+                            if (config.videoElement.readyState >= 2) {
+                                await config.hands.send({
+                                    image: config.videoElement
+                                });
+                            }
+                        },
+                        width: 640,
+                        height: 480,
+                        deviceId: { exact: deviceId } // Gunakan exact constraint
+                    });
+
+                    // Start kamera satu persatu
+                    try {
+                        await config.camera.start();
+                        console.log(`Kamera ${i+1} (${videoDevices[i].label}) started successfully`);
+                    } catch (err) {
+                        console.error(`Camera ${config.id} start failed:`, err);
+                        showElement(config, config.instructionsElement, "Error: Tidak dapat mengakses kamera.");
+                    }
+
+                    setProgress(config, 0);
+                }
+            } catch (err) {
+                console.error("Error saat inisialisasi:", err);
+                alert("Error: " + err.message + "\n\nPastikan Anda memiliki 2 kamera dan memberikan izin akses!");
             }
         }
 
