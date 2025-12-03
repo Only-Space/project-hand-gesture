@@ -1,0 +1,329 @@
+:root {
+    --primary-glow: #00ffff;
+    --secondary-glow: #0dff00;
+    --red-glow: #ff4444;
+    --background-start: #0c111e;
+    --background-end: #1a202c;
+    --text-color: #e0f2f7;
+}
+
+body {
+    margin: 0;
+    background: linear-gradient(135deg, var(--background-end) 0%, var(--background-start) 100%);
+    color: var(--text-color);
+    font-family: 'Poppins', sans-serif;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 50px;
+    min-height: 100vh;
+}
+
+#particle-canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+}
+
+.input_video {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scaleX(-1);
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+    opacity: 0.9;
+    z-index: 0;
+    transition: opacity 0.5s ease;
+}
+
+.scan-container {
+    position: relative;
+    z-index: 1;
+    width: 45vmin;
+    height: 45vmin;
+    max-width: 500px;
+    max-height: 500px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border: 2px solid rgba(0, 255, 255, 0.2);
+    border-radius: 50%;
+    background-color: rgba(0, 0, 0, 0.5);
+    animation: strobe-animation 1.5s ease-in-out infinite;
+    transition: opacity 0.5s ease, transform 0.5s ease;
+    overflow: hidden;
+}
+
+.scan-container.access-granted {
+    animation-name: strobe-animation-green;
+    border-color: rgba(13, 255, 0, 0.2);
+}
+
+.futuristic-arm-overlay {
+    position: absolute;
+    width: 70%;
+    height: 70%;
+    object-fit: cover;
+    opacity: 0.2;
+    transition: opacity 0.5s ease-in-out;
+    pointer-events: none;
+    z-index: 2;
+}
+
+.scan-container.identifying .futuristic-arm-overlay {
+    opacity: 0;
+}
+
+@keyframes strobe-animation {
+    0%, 100% {
+        box-shadow: 0 0 35px rgba(0, 255, 255, 0.3);
+        transform: scale(1);
+    }
+    50% {
+        box-shadow: 0 0 70px 10px rgba(0, 255, 255, 0.75);
+        transform: scale(1.015);
+    }
+}
+
+@keyframes strobe-animation-green {
+    0%, 100% {
+        box-shadow: 0 0 35px var(--secondary-glow);
+        transform: scale(1);
+    }
+    50% {
+        box-shadow: 0 0 70px 10px var(--secondary-glow);
+        transform: scale(1.015);
+    }
+}
+
+@keyframes strobe-animation-red {
+    0%, 100% {
+        box-shadow: 0 0 35px var(--red-glow);
+        transform: scale(1);
+    }
+    50% {
+        box-shadow: 0 0 70px 10px var(--red-glow);
+        transform: scale(1.015);
+    }
+}
+
+@keyframes pulseText {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 0.8;
+    }
+    50% {
+        transform: scale(1.05);
+        opacity: 1;
+    }
+}
+
+/* Container 2 Styling */
+#container2 {
+    border-color: rgba(255, 68, 68, 0.2);
+}
+
+#container2.red-theme {
+    animation-name: strobe-animation-red;
+}
+
+#container2 .instructions {
+    color: var(--red-glow);
+    text-shadow: 0 0 10px rgba(255, 68, 68, 0.7);
+}
+
+#progress-bar2 {
+    stroke: var(--red-glow);
+}
+
+.progress-circle {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+    z-index: 3;
+}
+
+.progress-circle circle {
+    fill: none;
+    stroke-width: 6px;
+}
+
+.progress-bg {
+    stroke: rgba(255, 255, 255, 0.1);
+}
+
+.progress-bar {
+    stroke: var(--primary-glow);
+    stroke-linecap: round;
+    transition: stroke-dashoffset 0.1s linear;
+}
+
+.ui-text-wrapper {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 4;
+    pointer-events: none;
+}
+
+.ui-text {
+    opacity: 0;
+    visibility: hidden;
+    position: absolute;
+    text-align: center;
+    transition: opacity 0.4s ease-in-out;
+    font-family: 'Orbitron', sans-serif;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+}
+
+#container1 .ui-text {
+    text-shadow: 0 0 10px rgba(0, 255, 255, 0.7);
+}
+
+#container2 .ui-text {
+    text-shadow: 0 0 10px rgba(255, 68, 68, 0.7) !important;
+}
+
+.visible {
+    opacity: 1 !important;
+    visibility: visible !important;
+}
+
+.instructions {
+    font-size: 0.75em;
+    color: var(--primary-glow);
+    animation: pulseText 1.5s infinite;
+}
+
+.status-message {
+    font-size: 0.8em;
+    color: #ffffff;
+    font-weight: bold;
+    background: rgba(0, 0, 0, 0.5);
+    padding: 5px 10px;
+    border-radius: 5px;
+}
+
+.countdown-display {
+    font-size: 6em;
+    color: white;
+    text-shadow: 0 0 20px rgba(255, 255, 255, 0.7);
+}
+
+.launch-message .label {
+    font-size: 1.2em;
+    font-weight: 300;
+    color: var(--primary-glow);
+}
+
+.launch-message .loading-percent {
+    font-size: 3em;
+    font-weight: 700;
+    margin-top: 10px;
+}
+
+.launch-message .final-message {
+    font-size: 1.3em;
+    font-weight: 700;
+    line-height: 1.4;
+}
+
+/* Start Overlay Styles */
+#start-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(12, 17, 30, 0.98);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+    text-align: center;
+    color: var(--text-color);
+}
+
+#start-overlay h1 {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 2.5em;
+    text-shadow: 0 0 15px var(--primary-glow);
+    margin-bottom: 10px;
+}
+
+.select-container {
+    display: flex;
+    gap: 30px;
+    margin-bottom: 40px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.cam-select-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 15px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.cam-label {
+    font-size: 0.85em;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: bold;
+}
+
+.cam-label.blue {
+    color: var(--primary-glow);
+}
+
+.cam-label.red {
+    color: var(--red-glow);
+}
+
+select.cam-select {
+    background-color: #000;
+    color: #fff;
+    border: 1px solid #555;
+    padding: 12px;
+    border-radius: 5px;
+    min-width: 250px;
+    cursor: pointer;
+}
+
+#start-button {
+    background-color: var(--primary-glow);
+    color: var(--background-start);
+    border: none;
+    padding: 15px 40px;
+    font-size: 1.2em;
+    font-family: 'Orbitron', sans-serif;
+    cursor: pointer;
+    border-radius: 5px;
+    text-transform: uppercase;
+    box-shadow: 0 0 20px var(--primary-glow);
+    font-weight: bold;
+}
+
+#start-button:disabled {
+    background-color: #555;
+    cursor: not-allowed;
+    box-shadow: none;
+}
